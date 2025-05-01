@@ -7,8 +7,8 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-FIXED_COLOR = 0x789922  # Yellowish green
-WEBHOOK_NAME = "GreenTextBot"
+GREEN_COLOR = 0x789922
+WEBHOOK_NAME = "GreentextBot"
 
 @bot.event
 async def on_ready():
@@ -16,43 +16,41 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user or not message.content.startswith('>'):
+    if message.author.bot:
         return
 
-    text = message.content[1:].strip()
-    if not text:
-        return
+    if message.content.startswith(">"):
+        text = message.content[1:].strip()
+        if not text:
+            return
 
-    # Delete the original message
-    await message.delete()
+        # Delete the original message
+        await message.delete()
 
-    # Get the webhook, or create one if it doesn't exist
-    webhooks = await message.channel.webhooks()
-    webhook = next((w for w in webhooks if w.name == WEBHOOK_NAME), None)
+        # Get or create a webhook
+        webhooks = await message.channel.webhooks()
+        webhook = next((w for w in webhooks if w.name == WEBHOOK_NAME), None)
 
-    if webhook is None:
-        webhook = await message.channel.create_webhook(name=WEBHOOK_NAME)
+        if webhook is None:
+            webhook = await message.channel.create_webhook(name=WEBHOOK_NAME)
 
-    # Build embed per character (like Rebane)
-    embeds = []
-    for char in text:
-        if char == ' ':
-            continue  # skip spaces (webhook messages with space-only embeds can bug out)
+        # Create one embed per character
+        embeds = []
+        for char in text:
+            if char.isspace():
+                continue  # Skip whitespace to prevent blank embeds
+            embeds.append(
+                discord.Embed(title=char, color=GREEN_COLOR)
+            )
 
-        embed = discord.Embed(
-            title=char,
-            color=FIXED_COLOR
-        )
-        embeds.append(embed)
+        # Send in batches of 10 (Discord limit)
+        for i in range(0, len(embeds), 10):
+            await webhook.send(
+                username=message.author.display_name,
+                avatar_url=message.author.avatar.url if message.author.avatar else None,
+                embeds=embeds[i:i+10]
+            )
 
-    # Split into batches of 10 embeds (Discord max)
-    for i in range(0, len(embeds), 10):
-        await webhook.send(
-            username=message.author.display_name,
-            avatar_url=message.author.avatar.url if message.author.avatar else None,
-            embeds=embeds[i:i+10]
-        )
-
-    # Done!
+    await bot.process_commands(message)
 
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
