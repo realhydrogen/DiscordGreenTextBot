@@ -28,4 +28,4 @@ async def on_message(message):
 
         await message.channel.send(embed=embed)
 
-bot.run(MTM2NzM5MDAzMDk3NjM4NTEzNQ.GOIcQX.PKYtK2vHuIND85Y5BJWQWseJun_NqYEV33pFXo)
+bot.run('YOUR_BOT_TOKEN')
