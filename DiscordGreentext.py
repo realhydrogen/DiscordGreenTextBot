@@ -22,10 +22,22 @@ async def on_message(message):
         # Delete the original message
         await message.delete()
 
-        # Use ANSI escape codes to color entire message green
+        # Format as ANSI
         ansi_wrapped = f"```ansi\n\u001b[0;32m{greentext}\u001b[0m\n```"
 
-        await message.channel.send(ansi_wrapped)
+        # Look for an existing webhook named "GreentextBot"
+        webhooks = await message.channel.webhooks()
+        webhook = next((w for w in webhooks if w.name == "GreentextBot"), None)
+
+        if webhook is None:
+            webhook = await message.channel.create_webhook(name="GreentextBot")
+
+        # Send as the user via webhook
+        await webhook.send(
+            content=ansi_wrapped,
+            username=message.author.display_name,
+            avatar_url=message.author.avatar.url if message.author.avatar else None
+        )
 
     await bot.process_commands(message)
 
